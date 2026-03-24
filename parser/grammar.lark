@@ -1,0 +1,45 @@
+?start: select_statement
+
+select_statement: "SELECT" select_items "FROM" table_ref join_clause* where_clause? ";"
+
+select_items: select_item ("," select_item)*
+
+select_item: expression ("AS" identifier)?
+
+table_ref: identifier identifier?  // identifier alias
+
+join_clause: join_type "JOIN" table_ref "ON" expression
+
+join_type: "INNER" -> inner_join
+         | "LEFT"  -> left_join
+         |         -> inner_join // Default to INNER JOIN
+
+where_clause: "WHERE" expression
+
+?expression: logical_or
+
+?logical_or: logical_and ("OR" logical_and)*
+
+?logical_and: comparison ("AND" comparison)*
+
+?comparison: atom OPERATOR atom
+           | atom
+
+?atom: column_ref
+     | literal
+     | "(" expression ")"
+
+column_ref: (identifier ".")? identifier
+
+literal: NUMBER -> number
+       | STRING -> string
+
+OPERATOR: "=" | "!=" | ">" | "<" | ">=" | "<="
+
+identifier: /[a-zA-Z_][a-zA-Z0-9_]*/
+
+%import common.CNAME -> NAME
+%import common.NUMBER
+%import common.WS
+%import common.ESCAPED_STRING -> STRING
+%ignore WS
