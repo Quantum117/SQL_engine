@@ -15,7 +15,7 @@ from planner.planner import LogicalPlanner
 from planner.optimizer import LogicalOptimizer, PredicatePushdownRule, ColumnPruningRule
 from planner.vectorized_planner import VectorizedPlanner
 from planner.physical_planner import PhysicalPlanner
-from visualization.visualizer import PhysicalPlanVisualizer, ASTVisualizer, HeatmapVisualizer
+from visualization.visualizer import PhysicalPlanVisualizer, ASTVisualizer, HeatmapVisualizer, LogicalPlanVisualizer
 
 @st.cache_resource
 def load_engine():
@@ -140,7 +140,7 @@ if execute_bt:
             
         # Draw visualizations using tabs
         st.subheader("Визуализации выполнения")
-        tab1, tab2, tab3, tab4 = st.tabs(["[1] Лексер (Токены)", "[2] AST-Дерево", "[3] Физический план DAG", "[4] Тепловая карта"])
+        tab1, tab2, tab3, tab4, tab5 = st.tabs(["[1] Лексер (Токены)", "[2] AST-Дерево", "[3] Логический План", "[4] Физический план DAG", "[5] Тепловая карта"])
         
         with tab1:
             st.markdown("### Лексический Анализ (Токенизация)")
@@ -158,12 +158,28 @@ if execute_bt:
                 st.image(ast_path, caption="Сгенерированное AST (из потока токенов)")
                 
         with tab3:
+            log_vis = LogicalPlanVisualizer()
+            l_path = log_vis.visualize(l_plan, "ui_raw_logical_plan")
+            o_path = log_vis.visualize(o_plan, "ui_opt_logical_plan")
+            
+            st.markdown("### Сравнение Логических Планов")
+            st.markdown("Слева показан сырой план. Справа — оптимизированный ('Fast') план.")
+            
+            c1, c2 = st.columns(2)
+            with c1:
+                if os.path.exists(l_path):
+                    st.image(l_path, caption="Сырой логический план (До оптимизации)")
+            with c2:
+                if os.path.exists(o_path):
+                    st.image(o_path, caption="Оптимизированный логический план (После оптимизации)")
+                
+        with tab4:
             visualizer = PhysicalPlanVisualizer()
             output_path = visualizer.visualize(active_plan, "ui_query_plan")
             if os.path.exists(output_path):
                 st.image(output_path, caption="Оптимизированный DAG-граф выполнения")
 
-        with tab4:
+        with tab5:
             h_vis = HeatmapVisualizer()
             h_path = h_vis.visualize(active_plan, "ui_heatmap")
             if os.path.exists(h_path):
