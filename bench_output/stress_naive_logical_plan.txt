@@ -1,0 +1,7 @@
+LogicalProject(items=[ColumnRef(name='name', table='u'), ColumnRef(name='amount', table='o'), ColumnRef(name='category', table='p')])
+  LogicalFilter(cond=LogicalExpression(left=LogicalExpression(left=BinaryExpression(left=ColumnRef(name='age', table='u'), operator='>', right=Literal(value=75)), operator='AND', right=BinaryExpression(left=ColumnRef(name='amount', table='o'), operator='>', right=Literal(value=450))), operator='AND', right=BinaryExpression(left=ColumnRef(name='status', table='p'), operator='=', right=Literal(value='inactive'))))
+    LogicalJoin(type=INNER JOIN, cond=BinaryExpression(left=ColumnRef(name='product_id', table='o'), operator='=', right=ColumnRef(name='id', table='p')))
+      LogicalJoin(type=INNER JOIN, cond=BinaryExpression(left=ColumnRef(name='id', table='u'), operator='=', right=ColumnRef(name='user_id', table='o')))
+        LogicalScan(table=users, columns=['id', 'name', 'age'], alias=u)
+        LogicalScan(table=orders, columns=['id', 'user_id', 'product_id', 'amount'], alias=o)
+      LogicalScan(table=products, columns=['id', 'name', 'category', 'status'], alias=p)

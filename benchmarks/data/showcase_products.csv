@@ -1,0 +1,51 @@
+id,name,category,status
+1,iPhone 15,Electronics,active
+2,Samsung Galaxy S23,Electronics,active
+3,Sony WH-1000XM5,Electronics,active
+4,MacBook Pro 14,Electronics,active
+5,Dell XPS 13,Electronics,inactive
+6,Logitech MX Master 3,Accessories,active
+7,Bose QuietComfort 45,Electronics,active
+8,Kindle Paperwhite,Books,active
+9,Nintendo Switch OLED,Entertainment,active
+10,PS5 DualSense Controller,Entertainment,inactive
+11,Levi's 501 Original,Clothing,active
+12,Nike Air Max 270,Footwear,active
+13,Adidas Ultraboost,Footwear,inactive
+14,Patagonia Down Sweater,Clothing,active
+15,North Face Denali,Clothing,active
+16,Raymond Weil Watch,Luxury,active
+17,Rolex Submariner,Luxury,inactive
+18,Tissot Le Locle,Luxury,active
+19,Seiko 5 Sport,Luxury,active
+20,Casio G-Shock,Luxury,active
+21,IKEA Malm Desk,Home,active
+22,Herman Miller Aeron,Home,active
+23,Steelcase Gesture,Home,inactive
+24,Philips Hue Starter Kit,Home,active
+25,Dyson V15 Detect,Home,active
+26,KitchenAid Stand Mixer,Appliances,active
+27,Nespresso Vertuo,Appliances,active
+28,Instant Pot Duo,Appliances,inactive
+29,Le Creuset Dutch Oven,Appliances,active
+30,Breville Barista Pro,Appliances,active
+31,Starbucks Espresso Roast,Coffee,active
+32,Blue Bottle Coffee,Coffee,active
+33,Lavazza Super Crema,Coffee,active
+34,Peet's Major Dickason's,Coffee,inactive
+35,Illy Classico,Coffee,active
+36,The Great Gatsby,Books,active
+37,1984 by George Orwell,Books,active
+38,Harry Potter Box Set,Books,active
+39,Becoming by Michelle Obama,Books,inactive
+40,Sapiens by Yuval Noah Harari,Books,active
+41,Yoga Mat,Fitness,active
+42,Adjustable Dumbbells,Fitness,active
+43,Peloton Bike+,Fitness,inactive
+44,Fitbit Charge 5,Fitness,active
+45,Bowflex Kettlebell,Fitness,active
+46,Hydro Flask 32oz,Outdoor,active
+47,YETI Tundra 45,Outdoor,active
+48,Coleman Sundome Tent,Outdoor,inactive
+49,Osprey Atmos 65,Outdoor,active
+50,Black Diamond Headlamp,Outdoor,active
