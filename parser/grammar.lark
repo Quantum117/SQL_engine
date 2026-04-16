@@ -3,6 +3,7 @@
 select_statement: SELECT select_items FROM table_ref join_clause* where_clause? group_by_clause? having_clause? order_by_clause? limit_clause? ";"?
 
 select_items: select_item ("," select_item)*
+            | "*" -> select_all
 
 select_item: expression (AS identifier)?
 

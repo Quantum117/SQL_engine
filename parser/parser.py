@@ -22,6 +22,12 @@ class SQLParser:
         tree = self.lark.parse(sql_text)
         return self.transformer.transform(tree)
 
+    def lex(self, sql_text: str):
+        sql_text = sql_text.strip()
+        if not sql_text.endswith(';'):
+            sql_text += ';'
+        return list(self.lark.lex(sql_text))
+
 if __name__ == "__main__":
     from visualization.visualizer import ASTVisualizer
     parser = SQLParser()

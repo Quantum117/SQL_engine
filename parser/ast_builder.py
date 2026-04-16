@@ -14,6 +14,9 @@ class Clause:
 class SQLTransformer(Transformer):
     def select_items(self, children):
         return [c for c in children if c != ","]
+        
+    def select_all(self, _):
+        return [SelectItem(expression=ColumnRef(table=None, name="*"), alias=None)]
 
     def select_item(self, children):
         expr = children[0]
