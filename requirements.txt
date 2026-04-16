@@ -1,0 +1,6 @@
+streamlit
+pandas
+numpy
+lark
+graphviz
+matplotlib
