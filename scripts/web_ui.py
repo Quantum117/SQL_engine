@@ -106,7 +106,7 @@ if execute_bt:
 
             num_cols = results_df.select_dtypes(include=[np.number]).columns
             if len(num_cols) > 0:
-                st.markdown("### 📊 Распределение данных (Matplotlib Profiling)")
+                st.markdown("### Распределение данных ")
                 # Wrap responsive cols row by row
                 max_cols_per_row = 6
                 for i in range(0, len(num_cols), max_cols_per_row):
