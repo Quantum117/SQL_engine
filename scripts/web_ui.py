@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from parser.parser import SQLParser
 from catalog.catalog import Catalog, TableSchema
 from planner.planner import LogicalPlanner
-from planner.optimizer import LogicalOptimizer, PredicatePushdownRule, ColumnPruningRule
+from planner.optimizer import LogicalOptimizer, PredicatePushdownRule, ColumnPruningRule, IndexRule
 from planner.vectorized_planner import VectorizedPlanner
 from planner.physical_planner import PhysicalPlanner
 from visualization.visualizer import PhysicalPlanVisualizer, ASTVisualizer, HeatmapVisualizer, LogicalPlanVisualizer
@@ -22,13 +22,31 @@ def load_engine():
     catalog = Catalog()
     path_data = os.path.join("benchmarks", "data")
     
-    catalog.register_table(TableSchema.from_lists("users", ["id", "name", "age"], ["INT", "STR", "INT"], file_path=os.path.join(path_data, "showcase_users.csv")))
+    # New Standard Datasets
+    titanic = TableSchema.from_lists("titanic", ["PassengerId", "Survived", "Pclass", "Name", "Sex", "Age", "SibSp", "Parch", "Ticket", "Fare", "Cabin", "Embarked"], ["INT", "INT", "INT", "STR", "STR", "INT", "INT", "INT", "STR", "FLOAT", "STR", "STR"], file_path=os.path.join(path_data, "titanic.csv"))
+    pokemon = TableSchema.from_lists("pokemon", ["id", "name", "type_1", "type_2", "total", "hp", "attack", "defense", "sp_atk", "sp_def", "speed", "generation", "legendary"], ["INT", "STR", "STR", "STR", "INT", "INT", "INT", "INT", "INT", "INT", "INT", "INT", "INT"], file_path=os.path.join(path_data, "pokemon.csv"))
+    
+    # Register Indexes for Drastic Optimization
+    users = TableSchema.from_lists("users", ["id", "name", "age"], ["INT", "STR", "INT"], file_path=os.path.join(path_data, "showcase_users.csv"))
+    users.add_index("id")
+    catalog.register_table(users)
+    
     catalog.register_table(TableSchema.from_lists("products", ["id", "name", "category", "status"], ["INT", "STR", "STR", "STR"], file_path=os.path.join(path_data, "showcase_products.csv")))
     catalog.register_table(TableSchema.from_lists("orders", ["id", "user_id", "product_id", "amount"], ["INT", "INT", "INT", "FLOAT"], file_path=os.path.join(path_data, "showcase_orders.csv")))
     
-    # New Standard Datasets
-    catalog.register_table(TableSchema.from_lists("titanic", ["PassengerId", "Survived", "Pclass", "Name", "Sex", "Age", "SibSp", "Parch", "Ticket", "Fare", "Cabin", "Embarked"], ["INT", "INT", "INT", "STR", "STR", "INT", "INT", "INT", "STR", "FLOAT", "STR", "STR"], file_path=os.path.join(path_data, "titanic.csv")))
-    catalog.register_table(TableSchema.from_lists("pokemon", ["id", "name", "type_1", "type_2", "total", "hp", "attack", "defense", "sp_atk", "sp_def", "speed", "generation", "legendary"], ["INT", "STR", "STR", "STR", "INT", "INT", "INT", "INT", "INT", "INT", "INT", "INT", "INT"], file_path=os.path.join(path_data, "pokemon.csv")))
+    # Register more indexes
+    titanic.add_index("PassengerId")
+    pokemon.add_index("id")
+    catalog.register_table(pokemon)
+    
+    # Large Stress-Test Tables (Optional, only if generated)
+    if os.path.exists(os.path.join(path_data, "bench_users.csv")):
+        large_users = TableSchema.from_lists("large_users", ["id", "name", "age"], ["INT", "STR", "INT"], file_path=os.path.join(path_data, "bench_users.csv"))
+        large_users.add_index("id")
+        catalog.register_table(large_users)
+    
+    if os.path.exists(os.path.join(path_data, "bench_orders.csv")):
+        catalog.register_table(TableSchema.from_lists("large_orders", ["id", "user_id", "product_id", "amount"], ["INT", "INT", "INT", "FLOAT"], file_path=os.path.join(path_data, "bench_orders.csv")))
         
     parser = SQLParser()
     l_planner = LogicalPlanner(catalog)
@@ -38,6 +56,7 @@ def load_engine():
     optimizer = LogicalOptimizer(catalog)
     optimizer.add_rule(PredicatePushdownRule())
     optimizer.add_rule(ColumnPruningRule())
+    optimizer.add_rule(IndexRule())
     
     return catalog, parser, l_planner, optimizer, p_planner, v_planner
 
@@ -54,12 +73,14 @@ for table_name, schema in catalog.tables.items():
         for col_name, col_type in schema.columns.items():
             st.markdown(f"🔸 `{col_name}` : **{col_type}**")
 
+
 example_queries = {
     "Пользовательский Запрос": "SELECT u.name, o.amount\nFROM users u \nJOIN orders o ON u.id = o.user_id\nWHERE u.age > 40\nLIMIT 5;",
     "Анализ выживаемости (Titanic)": "SELECT Sex, SUM(Survived), COUNT(PassengerId)\nFROM titanic\nWHERE Age > 18\nGROUP BY Sex;",
     "Самые сильные Покемоны (Pokemon)": "SELECT name, type_1, attack, defense, total\nFROM pokemon\nWHERE legendary = 1\nLIMIT 10;",
     "Простое чтение (Scan)": "SELECT id, name FROM users LIMIT 10;",
     "Стресс-тест агрегации (Vectorized)": "SELECT category, SUM(amount)\nFROM orders o\nJOIN products p ON o.product_id = p.id\nGROUP BY category;",
+    "Стресс-Тест (10k+ строк)": "SELECT u.name, o.amount\nFROM large_users u\nJOIN large_orders o ON u.id = o.user_id\nWHERE u.age > 80\nLIMIT 100;",
     "Сложный фильтр + LIMIT": "SELECT o.id, u.name, o.amount\nFROM orders o\nJOIN users u ON o.user_id = u.id\nWHERE o.amount > 500\nLIMIT 5;"
 }
 selected_example = st.selectbox("📚 Загрузить пример запроса", list(example_queries.keys()))
@@ -69,7 +90,19 @@ col1, col2 = st.columns([1, 4])
 with col1:
     execute_bt = st.button("🚀 Выполнить запрос", type="primary")
 with col2:
-    engine_type = st.radio("Механизм выполнения:", ["Volcano (Построчный)", "Vectorized (Векторный NumPy)"], horizontal=True)
+    engine_type = st.radio("Механизм выполнения:", ["Naive (Без оптимизации)", "Volcano (Построчный)", "Vectorized (Векторный NumPy)"], index=1, horizontal=True)
+
+def get_plan_stats(op):
+    if op is None: return 0
+    total = op.get_stats().get("processed_rows", 0)
+    # Recursively collect from children
+    if hasattr(op, "input"):
+        total += get_plan_stats(op.input)
+    if hasattr(op, "left"):
+        total += get_plan_stats(op.left)
+    if hasattr(op, "right"):
+        total += get_plan_stats(op.right)
+    return total
 
 if execute_bt:
     try:
@@ -78,10 +111,23 @@ if execute_bt:
         # Pipeline
         ast = parser.parse(sql)
         l_plan = l_planner.plan(ast)
-        o_plan = optimizer.optimize(l_plan)
+        
+        # We always calculate optimized plan for visualization, but choose which to execute
+        import copy
+        # Workaround: since we don't have deepcopy for these nodes easily, 
+        # let's just plan twice or be careful. 
+        # Actually, let's just use the l_plan for optimization and recreate it if needed for Naive.
+        o_plan = optimizer.optimize(l_planner.plan(ast)) 
         
         results_df = None
-        if engine_type == "Volcano (Row-based)":
+        current_plan = o_plan
+        if engine_type == "Naive (Без оптимизации)":
+            current_plan = l_plan
+            p_plan = p_planner.plan(l_plan)
+            active_plan = p_plan
+            results = list(p_plan)
+            if results: results_df = pd.DataFrame(results)
+        elif engine_type == "Volcano (Построчный)":
             p_plan = p_planner.plan(o_plan)
             active_plan = p_plan
             results = list(p_plan)
@@ -97,8 +143,9 @@ if execute_bt:
             if dfs: results_df = pd.concat(dfs, ignore_index=True)
         
         t_ms = (time.perf_counter() - t_start) * 1000
+        total_rows = get_plan_stats(active_plan)
         
-        st.success(f"Запрос успешно выполнен за {t_ms:.2f} мс")
+        st.success(f"🚀 Запрос выполнен! Время: {t_ms:.2f} мс | Общий объем работы (инспекций): {total_rows:,}")
         
         if results_df is not None and not results_df.empty:
             import numpy as np

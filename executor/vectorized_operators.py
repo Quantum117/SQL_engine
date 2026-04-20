@@ -31,7 +31,7 @@ class VectorizedScan(VectorizedOperator):
         if not os.path.exists(self.file_path):
             raise FileNotFoundError(f"CSV file not found: {self.file_path}")
         
-        self.chunk_iter = pd.read_csv(self.file_path, chunksize=batch_size)
+        self.chunk_iter = pd.read_csv(self.file_path, chunksize=batch_size, encoding='utf-8')
         self.loaded = True
 
     def next_batch(self, batch_size: int = 1024) -> Optional[Dict[str, np.ndarray]]:

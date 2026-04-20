@@ -86,7 +86,7 @@ class PhysicalScan(PhysicalOperator):
         if self.file is None:
             if not os.path.exists(self.file_path):
                 raise FileNotFoundError(f"CSV file not found: {self.file_path}")
-            self.file = open(self.file_path, 'r')
+            self.file = open(self.file_path, 'r', encoding='utf-8')
             self.reader = csv.DictReader(self.file)
 
         try:
@@ -120,8 +120,8 @@ class PhysicalFilter(PhysicalOperator):
         try:
             while True:
                 row = next(self.input)
+                self.stats["processed_rows"] += 1
                 if self.evaluate(self.condition, row):
-                    self.stats["processed_rows"] += 1
                     return row
         finally:
             self.stats["time_ms"] += (time.perf_counter() - start) * 1000
@@ -137,12 +137,12 @@ class PhysicalProject(PhysicalOperator):
         start = time.perf_counter()
         try:
             row = next(self.input)
+            self.stats["processed_rows"] += 1
             new_row = {}
             for expr, alias in zip(self.expressions, self.aliases):
                 val = self.evaluate(expr, row)
                 name = alias if alias else self._get_default_name(expr)
                 new_row[name] = val
-            self.stats["processed_rows"] += 1
             return new_row
         finally:
             self.stats["time_ms"] += (time.perf_counter() - start) * 1000
@@ -181,12 +181,12 @@ class PhysicalJoin(PhysicalOperator):
                 if self.right_idx < len(self.right_rows):
                     r_row = self.right_rows[self.right_idx]
                     self.right_idx += 1
+                    self.stats["processed_rows"] += 1 # Count every comparison pair
                     
                     # Zero-allocation condition check
                     if self.condition is None or self.evaluate(self.condition, self.left_row, r_row):
                         # Only merge on success
                         combined = {**self.left_row, **r_row}
-                        self.stats["processed_rows"] += 1
                         return combined
                 else:
                     self.left_row = next(self.left)
@@ -239,16 +239,8 @@ class PhysicalHashAggregate(PhysicalOperator):
                     agg_key = f"{agg.func}({agg.expression.pretty()})"
                     val = self.evaluate(agg.expression, row)
                     self.groups[key][agg_key] = self._update_agg(agg, self.groups[key][agg_key], val)
+                self.stats["processed_rows"] += 1 # Count every input row
         except StopIteration: pass
-
-        for key, agg_results in self.groups.items():
-            for agg in self.aggregates:
-                if agg.func == "AVG":
-                    agg_key = f"{agg.func}({agg.expression.pretty()})"
-                    s, c = agg_results[agg_key]
-                    agg_results[agg_key] = s / c if c > 0 else 0
-            self.result_rows.append(agg_results)
-            self.stats["processed_rows"] += 1
         self.executed = True
 
     def _find_full_name(self, col_name, row):
@@ -312,7 +304,7 @@ class PhysicalIndexScan(PhysicalOperator):
 
     def _build_index(self):
         if not os.path.exists(self.file_path): raise FileNotFoundError(self.file_path)
-        with open(self.file_path, 'r') as f:
+        with open(self.file_path, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
                 prefixed_row = {f"{self.alias}.{k}": self._parse_val(v) for k, v in row.items() if k in self.columns}
